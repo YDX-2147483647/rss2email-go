@@ -18,7 +18,6 @@ import (
 	"html"
 	"io"
 	"mime/quotedprintable"
-	"net/smtp"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,6 +25,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/go-mail/mail"
 	"github.com/mmcdole/gofeed"
 	"github.com/skx/rss2email/configfile"
 	"github.com/skx/rss2email/state"
@@ -284,19 +284,20 @@ func (e *Emailer) sendSMTP(to string, content []byte) error {
 		p = n
 	}
 
-	// auth
 	user := os.Getenv("SMTP_USERNAME")
 	pass := os.Getenv("SMTP_PASSWORD")
 
-	// Authenticate
-	auth := smtp.PlainAuth("", user, pass, host)
+	m := mail.NewMessage()
+	m.SetHeader("From", user)
+	m.SetHeader("To", to)
 
-	// Get the mailserver
-	addr := fmt.Sprintf("%s:%d", host, p)
+	// todo
+	m.SetHeader("Subject", "Hello!")
+	m.SetBody("text/html", string(content))
 
-	// Send the mail
-	err := smtp.SendMail(addr, auth, to, []string{to}, content)
+	dialer := mail.NewDialer(host, p, user, pass)
 
+	err := dialer.DialAndSend(m)
 	return err
 }
 
